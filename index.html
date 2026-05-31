@@ -3,75 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AmarIP Ultimate</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/8.2.3/adapter.min.js"></script>
+    <title>AmarIP Ultimate Fix</title>
+    <!-- 1. LOAD JQUERY FIRST -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <!-- 2. LOAD ADAPTER -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/8.2.3/adapter.min.js"></script>
+    <!-- 3. LOAD JANUS (Stable Link) -->
     <script src="https://janus.conf.meetecho.com/janus.js"></script>
+    <!-- 4. UI STYLING -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .numpad-btn:active { transform: scale(0.9); background-color: #1e293b; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
 </head>
-<body class="bg-[#0b0e14] text-slate-300 font-sans h-screen flex flex-col">
+<body class="bg-[#0b0e14] text-slate-300 font-sans h-screen flex flex-col overflow-hidden">
 
     <header class="h-14 border-b border-slate-800 bg-[#161b22] flex items-center justify-between px-6">
         <div class="flex items-center gap-2">
             <h1 class="text-sm font-bold text-white tracking-widest uppercase">AmarIP <span class="text-blue-500">Voice</span></h1>
         </div>
-        <div id="status" class="text-[10px] font-bold px-3 py-1 rounded bg-slate-900 border border-slate-700 text-rose-500 underline cursor-pointer" onclick="checkSSL()">CHECK CONNECTION</div>
+        <div id="status" class="text-[10px] font-bold px-3 py-1 rounded bg-slate-900 border border-slate-700 text-rose-500 underline cursor-pointer" onclick="window.open('https://amarip.net/janus-ws', '_blank')">
+            CHECK CONNECTION
+        </div>
     </header>
 
     <div class="flex-1 flex overflow-hidden">
         <aside class="w-64 border-r border-slate-800 bg-[#0d1117] flex flex-col p-4">
-            <button onclick="$('#csvFile').click()" class="text-xs font-bold text-blue-400 mb-4 hover:underline">↑ IMPORT CONTACTS</button>
+            <button onclick="$('#csvFile').click()" class="text-xs font-bold text-blue-400 mb-4 hover:underline">↑ IMPORT CSV</button>
             <input type="file" id="csvFile" class="hidden" accept=".csv" onchange="importCSV(this)">
-            <div id="contactList" class="flex-1 overflow-y-auto space-y-2"></div>
+            <div id="contactList" class="flex-1 overflow-y-auto space-y-1"></div>
         </aside>
 
-        <main class="flex-1 flex flex-col items-center justify-center relative bg-[#0b0e14]">
-            <div class="w-64">
-                <input id="dialDisplay" type="text" readonly class="w-full bg-transparent text-5xl font-light text-center mb-10 text-white outline-none tracking-tighter" placeholder="0000">
-                <div class="grid grid-cols-3 gap-4 mb-10">
+        <main class="flex-1 flex flex-col items-center justify-center relative">
+            <div class="w-64 text-center">
+                <input id="dialDisplay" type="text" readonly class="w-full bg-transparent text-5xl font-light text-center mb-8 text-white outline-none tracking-tighter" placeholder="0000">
+                <div class="grid grid-cols-3 gap-4 mb-8">
                     <script>
                         ['1','2','3','4','5','6','7','8','9','*','0','#'].forEach(k => {
-                            document.write(`<button onclick="press('${k}')" class="h-14 w-14 mx-auto rounded-full bg-slate-900 hover:bg-slate-800 text-xl text-white border border-slate-800 active:scale-90 transition-all">${k}</button>`);
+                            document.write(`<button onclick="press('${k}')" class="numpad-btn h-14 w-14 mx-auto rounded-full bg-slate-900 hover:bg-slate-800 text-xl text-white border border-slate-800 transition-all font-medium">${k}</button>`);
                         });
                     </script>
                 </div>
                 <div class="flex justify-center gap-4">
-                    <button id="callBtn" onclick="doCall()" class="h-16 w-16 bg-emerald-600 hover:bg-emerald-500 rounded-full flex items-center justify-center text-2xl text-white shadow-lg">📞</button>
-                    <button id="hangupBtn" onclick="doHangup()" class="h-16 w-16 bg-rose-600 hover:bg-rose-500 rounded-full hidden flex items-center justify-center text-2xl text-white shadow-lg">🛑</button>
+                    <button id="callBtn" onclick="doCall()" class="h-16 w-16 bg-emerald-600 hover:bg-emerald-500 rounded-full flex items-center justify-center text-2xl text-white shadow-lg shadow-emerald-900/20 transition-all">📞</button>
+                    <button id="hangupBtn" onclick="doHangup()" class="h-16 w-16 bg-rose-600 hover:bg-rose-500 rounded-full hidden flex items-center justify-center text-2xl text-white shadow-lg shadow-rose-900/20 transition-all">🛑</button>
                 </div>
             </div>
             
-            <!-- DEBUG WINDOW -->
-            <div id="debug" class="absolute bottom-4 left-4 right-4 h-24 bg-black/80 rounded p-2 font-mono text-[9px] text-emerald-500 overflow-y-auto border border-slate-800">
-                > Initializing...
+            <div id="debug" class="absolute bottom-4 left-4 right-4 h-20 bg-black/60 rounded p-2 font-mono text-[9px] text-emerald-400 overflow-y-auto border border-slate-800">
+                > Waiting for Library...
             </div>
         </main>
     </div>
 
     <audio id="remoteaudio" autoplay></audio>
 
-    <div id="settingsModal" class="fixed inset-0 bg-black/95 z-50 hidden flex items-center justify-center p-6">
-        <div class="bg-[#161b22] border border-slate-700 w-full max-w-xs rounded-2xl p-6">
-            <h3 class="text-white font-bold mb-4 text-center">LOGIN</h3>
-            <input id="sip_user" type="text" placeholder="SIP Number" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg mb-2 text-sm">
-            <input id="sip_pass" type="password" placeholder="Password" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg mb-2 text-sm">
-            <button onclick="saveSettings()" class="w-full bg-blue-600 py-3 rounded-lg font-bold text-white mb-2">CONNECT</button>
-            <p class="text-[9px] text-slate-500 text-center mt-2 uppercase">Ensure ModHeader is ON</p>
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/95 z-50 hidden flex items-center justify-center p-6 backdrop-blur-md">
+        <div class="bg-[#161b22] border border-slate-800 w-full max-w-xs rounded-2xl p-6 shadow-2xl">
+            <h3 class="text-white font-bold mb-4 text-center">SIP SETTINGS</h3>
+            <div class="space-y-3">
+                <input id="sip_user" type="text" placeholder="SIP Number (e.g. 096...)" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm outline-none focus:border-blue-500">
+                <input id="sip_pass" type="password" placeholder="SIP Password" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm outline-none focus:border-blue-500">
+                <button onclick="saveSettings()" class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-bold text-white transition-all">CONNECT</button>
+                <p class="text-[9px] text-slate-500 text-center uppercase">Ensure ModHeader is enabled</p>
+            </div>
         </div>
     </div>
 
     <script>
         let janus = null, sipcall = null, contacts = JSON.parse(localStorage.getItem('bd_contacts')) || [];
 
-        function log(m) { $('#debug').append(`<div>[${new Date().toLocaleTimeString()}] ${m}</div>`).scrollTop($('#debug')[0].scrollHeight); }
+        function log(m) { 
+            $('#debug').append(`<div>[${new Date().toLocaleTimeString()}] ${m}</div>`);
+            $('#debug').scrollTop($('#debug')[0].scrollHeight);
+        }
 
         $(document).ready(() => {
             renderContacts();
-            if(localStorage.getItem('bd_cfg')) initJanus();
-            else $('#settingsModal').show();
+            // SAFETY CHECK: Wait 1 second for the Janus library to initialize
+            setTimeout(() => {
+                if (typeof Janus === "undefined") {
+                    log("<span class='text-rose-500'>CRITICAL ERROR: Janus Library blocked by your Browser/ISP. Check your internet or disable AdBlockers.</span>");
+                    updateStatus("LIB ERROR", "text-rose-500");
+                } else {
+                    log("Janus Library Detected. Checking Settings...");
+                    if(localStorage.getItem('bd_cfg')) initJanus();
+                    else $('#settingsModal').show();
+                }
+            }, 1000);
         });
-
-        function checkSSL() { window.open("https://amarip.net/janus-ws", "_blank"); }
 
         function saveSettings() {
             const cfg = {
@@ -86,18 +109,18 @@
 
         function initJanus() {
             const cfg = JSON.parse(localStorage.getItem('bd_cfg'));
+            
             Janus.init({ debug: "none", callback: function() {
                 janus = new Janus({
                     server: cfg.server,
-                    // FIX: This tells Janus to use the protocol seen in your screenshot
-                    protocol: 'janus-protocol', 
+                    protocol: 'janus-protocol',
                     success: function() {
-                        log("WS Connected to AmarIP");
+                        log("Connected to AmarIP Server.");
                         janus.attach({
                             plugin: "janus.plugin.sip",
                             success: function(handle) {
                                 sipcall = handle;
-                                log("Registering...");
+                                log("SIP Plugin Ready. Registering " + cfg.user);
                                 sipcall.send({ message: {
                                     request: "register",
                                     proxy: `sip:${cfg.proxy}`,
@@ -105,26 +128,34 @@
                                     secret: cfg.pass
                                 }});
                             },
-                            error: (e) => log("Error: " + e),
+                            error: (e) => log("Plugin Error: " + e),
                             onmessage: (msg, jsep) => {
                                 const event = msg?.result?.event;
                                 if(event === 'registered') updateStatus("ONLINE", "text-emerald-500");
-                                if(event === 'registration_failed') updateStatus("AUTH FAILED", "text-rose-500");
+                                if(event === 'registration_failed') updateStatus("AUTH ERROR", "text-rose-500");
                                 if(event === 'hangup') resetUI();
+                                if(event === 'incomingcall') {
+                                    if(confirm("Call from " + msg.result.displayname + ". Answer?")) {
+                                        sipcall.createAnswer({
+                                            jsep: jsep, media: { audio: true, video: false },
+                                            success: (ans) => sipcall.send({ message: { request: "accept" }, jsep: ans })
+                                        });
+                                    }
+                                }
                                 if(jsep) sipcall.handleRemoteJsep({ jsep: jsep });
                             },
                             onremotestream: (stream) => Janus.attachMediaStream($('#remoteaudio').get(0), stream)
                         });
                     },
                     error: (e) => {
-                        log("Connection Blocked by Browser/Server");
-                        updateStatus("OFFLINE - CLICK TO FIX", "text-rose-500");
+                        log("Connection Failed. This is likely an Origin/SSL block.");
+                        updateStatus("OFFLINE - BLOCKED", "text-rose-500");
                     }
                 });
             }});
         }
 
-        // UI HELPERS
+        // Dialer Logic
         function press(k) { $('#dialDisplay').val($('#dialDisplay').val() + k); }
         function doCall(target) {
             const num = target || $('#dialDisplay').val();
@@ -140,13 +171,16 @@
         function doHangup() { sipcall.send({ message: { request: "hangup" } }); resetUI(); }
         function resetUI() { $('#callBtn').show(); $('#hangupBtn').hide(); $('#dialDisplay').val(''); }
         function updateStatus(t, c) { $('#status').text(t).removeClass().addClass(`text-[10px] font-bold px-3 py-1 rounded bg-slate-900 border border-slate-700 ${c}`); }
+        
         function renderContacts() {
             $('#contactList').html(contacts.map(c => `
-                <div class="p-2 border-b border-slate-800 hover:bg-slate-800 cursor-pointer" onclick="doCall('${c.phone}')">
-                    <div class="text-xs font-bold text-white">${c.name}</div><div class="text-[9px] text-slate-500">${c.phone}</div>
+                <div class="p-2 border-b border-slate-800 hover:bg-slate-800 transition cursor-pointer flex justify-between items-center group" onclick="doCall('${c.phone}')">
+                    <div><div class="text-[11px] font-bold text-white">${c.name}</div><div class="text-[9px] text-slate-500 font-mono">${c.phone}</div></div>
+                    <div class="opacity-0 group-hover:opacity-100 text-emerald-500">📞</div>
                 </div>
             `).join(''));
         }
+
         function importCSV(input) {
             const reader = new FileReader();
             reader.onload = (e) => {
