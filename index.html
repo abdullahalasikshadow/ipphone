@@ -3,84 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AmarIP Pro Dialer</title>
+    <title>AmarIP Daily Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/8.2.3/adapter.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://janus.conf.meetecho.com/janus.js"></script>
 </head>
-<body class="bg-[#0b0e14] text-slate-300 font-sans h-screen flex flex-col">
+<body class="bg-[#0b0e14] text-slate-300 font-sans h-screen flex flex-col overflow-hidden">
 
-    <!-- Header -->
     <header class="h-14 border-b border-slate-800 bg-[#161b22] flex items-center justify-between px-6">
         <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold">A</div>
-            <h1 class="text-sm font-bold tracking-widest text-white">AMARIP <span class="text-blue-500">VOICE</span></h1>
+            <div class="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white font-bold">A</div>
+            <h1 class="text-sm font-bold text-white">AMARIP <span class="text-indigo-500">VOICE</span></h1>
         </div>
-        <div id="status" class="text-[10px] font-bold px-3 py-1 rounded bg-slate-800 border border-slate-700 text-rose-500">
-            DISCONNECTED
-        </div>
+        <div id="status" class="text-[10px] font-bold px-3 py-1 rounded bg-slate-900 border border-slate-700 text-rose-500">OFFLINE</div>
     </header>
 
     <div class="flex-1 flex overflow-hidden">
-        <!-- Sidebar: Contacts -->
-        <aside class="w-72 border-r border-slate-800 bg-[#0d1117] flex flex-col">
-            <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/30">
-                <span class="text-[10px] font-bold uppercase text-slate-500">Contacts</span>
+        <aside class="w-64 border-r border-slate-800 bg-[#0d1117] flex flex-col">
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Contacts</span>
+                <button onclick="$('#csvFile').click()" class="text-[10px] text-indigo-400 font-bold">IMPORT</button>
                 <input type="file" id="csvFile" class="hidden" accept=".csv" onchange="importCSV(this)">
-                <button onclick="$('#csvFile').click()" class="text-[10px] text-blue-400 font-bold">IMPORT CSV</button>
             </div>
-            <div id="contactList" class="flex-1 overflow-y-auto"></div>
+            <div id="contactList" class="flex-1 overflow-y-auto custom-scrollbar"></div>
         </aside>
 
-        <!-- Main Display -->
-        <main class="flex-1 flex flex-col bg-[#0b0e14]">
-            <div class="flex-1 flex flex-col items-center justify-center">
-                <div class="w-64">
-                    <input id="dialDisplay" type="text" readonly class="w-full bg-transparent text-5xl font-light text-center mb-8 text-white outline-none" placeholder="0000">
-                    <div class="grid grid-cols-3 gap-3 mb-8">
-                        <script>
-                            ['1','2','3','4','5','6','7','8','9','*','0','#'].forEach(k => {
-                                document.write(`<button onclick="press('${k}')" class="h-14 w-14 mx-auto rounded-full bg-slate-800 hover:bg-slate-700 text-xl text-white transition-all active:scale-90">${k}</button>`);
-                            });
-                        </script>
-                    </div>
-                    <div class="flex justify-center gap-4">
-                        <button id="callBtn" onclick="doCall()" class="h-16 w-16 bg-emerald-600 hover:bg-emerald-500 rounded-full flex items-center justify-center text-2xl text-white shadow-lg">📞</button>
-                        <button id="hangupBtn" onclick="doHangup()" class="h-16 w-16 bg-rose-600 hover:bg-rose-500 rounded-full hidden flex items-center justify-center text-2xl text-white shadow-lg">🛑</button>
-                    </div>
+        <main class="flex-1 flex flex-col items-center justify-center bg-[#0b0e14] relative">
+            <div class="w-64">
+                <input id="dialDisplay" type="text" readonly class="w-full bg-transparent text-5xl font-light text-center mb-10 text-white outline-none tracking-tighter" placeholder="0000">
+                <div class="grid grid-cols-3 gap-4 mb-10">
+                    <script>
+                        ['1','2','3','4','5','6','7','8','9','*','0','#'].forEach(k => {
+                            document.write(`<button onclick="press('${k}')" class="h-14 w-14 mx-auto rounded-full bg-slate-900 hover:bg-slate-800 text-xl text-white border border-slate-800 transition-all active:scale-90 font-medium">${k}</button>`);
+                        });
+                    </script>
+                </div>
+                <div class="flex justify-center gap-4">
+                    <button id="callBtn" onclick="doCall()" class="h-16 w-16 bg-emerald-600 hover:bg-emerald-500 rounded-full flex items-center justify-center text-2xl text-white shadow-lg active:scale-90 transition-transform">📞</button>
+                    <button id="hangupBtn" onclick="doHangup()" class="h-16 w-16 bg-rose-600 hover:bg-rose-500 rounded-full hidden flex items-center justify-center text-2xl text-white shadow-lg active:scale-90 transition-transform">🛑</button>
                 </div>
             </div>
-
-            <!-- Debug Console (To see why it fails) -->
-            <div class="h-32 bg-black border-t border-slate-800 p-2 font-mono text-[10px] overflow-y-auto text-emerald-500" id="console">
-                <div>> System Initialized... Ready to Connect.</div>
+            
+            <div id="debug" class="absolute bottom-4 left-4 right-4 h-24 bg-black/50 rounded p-2 font-mono text-[9px] text-emerald-500 overflow-y-auto">
+                > System ready...
             </div>
         </main>
     </div>
 
-    <!-- Modals & Audio -->
     <audio id="remoteaudio" autoplay></audio>
-    <div id="settingsModal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-6">
-        <div class="bg-[#161b22] border border-slate-700 w-full max-w-sm rounded-lg p-6">
-            <h3 class="text-white font-bold mb-4">SIP Credentials</h3>
-            <input id="sip_user" type="text" placeholder="SIP Number" class="w-full bg-slate-900 border border-slate-700 p-2 rounded mb-2 text-sm">
-            <input id="sip_pass" type="password" placeholder="Password" class="w-full bg-slate-900 border border-slate-700 p-2 rounded mb-2 text-sm">
-            <input id="sip_proxy" type="text" value="amarip.net" class="w-full bg-slate-900 border border-slate-700 p-2 rounded mb-4 text-sm">
-            <button onclick="saveSettings()" class="w-full bg-blue-600 py-2 rounded font-bold text-white mb-2">Connect Now</button>
-            <button onclick="$('#settingsModal').hide()" class="w-full text-slate-500 text-xs">Close</button>
+
+    <div id="settingsModal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-6 backdrop-blur-sm">
+        <div class="bg-[#161b22] border border-slate-700 w-full max-w-xs rounded-2xl p-6 shadow-2xl">
+            <h3 class="text-white font-bold mb-4 text-center">SIP LOGIN</h3>
+            <input id="sip_user" type="text" placeholder="SIP User" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg mb-2 text-sm outline-none focus:border-indigo-500">
+            <input id="sip_pass" type="password" placeholder="Password" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg mb-2 text-sm outline-none focus:border-indigo-500">
+            <input id="sip_proxy" type="text" value="amarip.net" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg mb-4 text-sm outline-none focus:border-indigo-500">
+            <button onclick="saveSettings()" class="w-full bg-indigo-600 py-3 rounded-lg font-bold text-white mb-2 hover:bg-indigo-500 transition-colors">CONNECT</button>
         </div>
     </div>
 
     <script>
-        let janus = null, sipcall = null, sessionID = null;
-        let contacts = JSON.parse(localStorage.getItem('contacts_db')) || [];
+        let janus = null, sipcall = null, keepAliveTimer = null;
+        let contacts = JSON.parse(localStorage.getItem('bd_contacts')) || [];
 
-        function log(msg) { $('#console').append(`<div>> ${msg}</div>`).scrollTop($('#console')[0].scrollHeight); }
+        function log(m) { 
+            $('#debug').append(`<div>[${new Date().toLocaleTimeString()}] ${m}</div>`);
+            $('#debug').scrollTop($('#debug')[0].scrollHeight);
+        }
 
         $(document).ready(() => {
             renderContacts();
-            if(localStorage.getItem('amar_cfg')) initJanus();
+            if(localStorage.getItem('bd_sip_cfg')) initJanus();
             else $('#settingsModal').show();
         });
 
@@ -91,25 +85,30 @@
                 proxy: $('#sip_proxy').val(),
                 server: "wss://amarip.net/janus-ws"
             };
-            localStorage.setItem('amar_cfg', JSON.stringify(cfg));
+            localStorage.setItem('bd_sip_cfg', JSON.stringify(cfg));
             location.reload();
         }
 
         function initJanus() {
-            const cfg = JSON.parse(localStorage.getItem('amar_cfg'));
-            log(`Attempting connection to ${cfg.server}...`);
-
-            Janus.init({ debug: "all", callback: function() {
+            const cfg = JSON.parse(localStorage.getItem('bd_sip_cfg'));
+            Janus.init({ debug: "none", callback: function() {
                 janus = new Janus({
                     server: cfg.server,
                     success: function() {
-                        log("Connected to Janus Server.");
+                        log("Connected to Janus Server");
                         janus.attach({
                             plugin: "janus.plugin.sip",
                             success: function(handle) {
                                 sipcall = handle;
-                                log("SIP Plugin attached. Registering...");
-                                registerSIP(cfg);
+                                log("SIP Plugin Ready. Registering...");
+                                sipcall.send({ message: {
+                                    request: "register",
+                                    proxy: `sip:${cfg.proxy}`,
+                                    username: `sip:${cfg.user}@${cfg.proxy}`,
+                                    secret: cfg.pass
+                                }});
+                                // Start Heartbeat
+                                keepAliveTimer = setInterval(() => { janus.send({janus: "keepalive"}); }, 25000);
                             },
                             error: (e) => log("Plugin Error: " + e),
                             onmessage: onMessage,
@@ -117,38 +116,26 @@
                         });
                     },
                     error: (e) => {
-                        log("Connection Failed. This usually means AmarIP blocks GitHub's origin.");
-                        updateStatus("OFFLINE - BLOCKED", "text-rose-500");
+                        log("WS Error: " + JSON.stringify(e));
+                        updateStatus("DISCONNECTED - CHECK ORIGIN", "text-rose-500");
                     }
                 });
             }});
         }
 
-        function registerSIP(cfg) {
-            const reg = {
-                request: "register",
-                proxy: `sip:${cfg.proxy}`,
-                username: `sip:${cfg.user}@${cfg.proxy}`,
-                secret: cfg.pass
-            };
-            sipcall.send({ message: reg });
-        }
-
         function onMessage(msg, jsep) {
-            const result = msg["result"];
-            if(result && result["event"]) {
-                const event = result["event"];
-                log("Server Event: " + event);
-                if(event === 'registered') updateStatus("ONLINE", "text-emerald-500");
-                if(event === 'registration_failed') updateStatus("AUTH ERROR", "text-amber-500");
-                if(event === 'hangup') resetUI();
-                if(event === 'incomingcall') {
-                    if(confirm("Call from " + result["displayname"] + ". Answer?")) {
-                        sipcall.createAnswer({
-                            jsep: jsep, media: { audio: true, video: false },
-                            success: (ans) => sipcall.send({ message: { request: "accept" }, jsep: ans })
-                        });
-                    }
+            const event = msg?.result?.event;
+            if(event) log("Event: " + event);
+            
+            if(event === 'registered') updateStatus("ONLINE", "text-emerald-500");
+            if(event === 'registration_failed') updateStatus("AUTH ERROR", "text-rose-500");
+            if(event === 'hangup') resetUI();
+            if(event === 'incomingcall') {
+                if(confirm(`Incoming Call. Answer?`)) {
+                    sipcall.createAnswer({
+                        jsep: jsep, media: { audio: true, video: false },
+                        success: (ans) => sipcall.send({ message: { request: "accept" }, jsep: ans })
+                    });
                 }
             }
             if(jsep) sipcall.handleRemoteJsep({ jsep: jsep });
@@ -156,11 +143,11 @@
 
         function doCall(target) {
             const num = target || $('#dialDisplay').val();
-            const cfg = JSON.parse(localStorage.getItem('amar_cfg'));
-            log(`Calling ${num}...`);
+            if(!num) return;
             sipcall.createOffer({
                 media: { audio: true, video: false },
                 success: (jsep) => {
+                    const cfg = JSON.parse(localStorage.getItem('bd_sip_cfg'));
                     sipcall.send({ message: { request: "call", uri: `sip:${num}@${cfg.proxy}` }, jsep: jsep });
                     $('#callBtn').hide(); $('#hangupBtn').show();
                 }
@@ -173,14 +160,14 @@
         }
 
         function resetUI() { $('#callBtn').show(); $('#hangupBtn').hide(); $('#dialDisplay').val(''); }
-        function updateStatus(txt, cls) { $('#status').text(txt).removeClass().addClass(`text-[10px] font-bold px-3 py-1 rounded bg-slate-800 border border-slate-700 ${cls}`); }
+        function updateStatus(t, c) { $('#status').text(t).removeClass().addClass(`text-[10px] font-bold px-3 py-1 rounded bg-slate-900 border border-slate-700 ${c}`); }
         function press(k) { $('#dialDisplay').val($('#dialDisplay').val() + k); }
 
         function renderContacts() {
             $('#contactList').html(contacts.map(c => `
-                <div class="p-3 border-b border-slate-800 hover:bg-slate-800 transition cursor-pointer" onclick="doCall('${c.phone}')">
-                    <div class="text-xs font-bold text-white">${c.name}</div>
-                    <div class="text-[10px] text-slate-500">${c.phone}</div>
+                <div class="p-3 border-b border-slate-800 hover:bg-slate-800/50 cursor-pointer group flex justify-between" onclick="doCall('${c.phone}')">
+                    <div><div class="text-xs font-bold text-white">${c.name}</div><div class="text-[10px] text-slate-500">${c.phone}</div></div>
+                    <div class="opacity-0 group-hover:opacity-100 text-emerald-500">📞</div>
                 </div>
             `).join(''));
         }
@@ -192,7 +179,7 @@
                     const [n, p] = line.split(',');
                     if(n && p) contacts.push({ name: n.trim(), phone: p.trim() });
                 });
-                localStorage.setItem('contacts_db', JSON.stringify(contacts));
+                localStorage.setItem('bd_contacts', JSON.stringify(contacts));
                 renderContacts();
             };
             reader.readAsText(input.files[0]);
