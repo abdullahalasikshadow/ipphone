@@ -3,180 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AmarIP Daily Pro</title>
+    <title>AmarIP Ultimate</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/8.2.3/adapter.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://janus.conf.meetecho.com/janus.js"></script>
 </head>
-<body class="bg-[#0b0e14] text-slate-300 font-sans h-screen flex flex-col overflow-hidden">
+<body class="bg-[#0b0e14] text-slate-300 font-sans h-screen flex flex-col">
 
     <header class="h-14 border-b border-slate-800 bg-[#161b22] flex items-center justify-between px-6">
         <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white font-bold">A</div>
-            <h1 class="text-sm font-bold text-white">AMARIP <span class="text-indigo-500">VOICE</span></h1>
+            <h1 class="text-sm font-bold text-white tracking-widest uppercase">AmarIP <span class="text-blue-500">Voice</span></h1>
         </div>
-        <div id="status" class="text-[10px] font-bold px-3 py-1 rounded bg-slate-900 border border-slate-700 text-rose-500">OFFLINE</div>
+        <div id="status" class="text-[10px] font-bold px-3 py-1 rounded bg-slate-900 border border-slate-700 text-rose-500 underline cursor-pointer" onclick="checkSSL()">CHECK CONNECTION</div>
     </header>
 
     <div class="flex-1 flex overflow-hidden">
-        <aside class="w-64 border-r border-slate-800 bg-[#0d1117] flex flex-col">
-            <div class="p-4 border-b border-slate-800 flex justify-between items-center">
-                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Contacts</span>
-                <button onclick="$('#csvFile').click()" class="text-[10px] text-indigo-400 font-bold">IMPORT</button>
-                <input type="file" id="csvFile" class="hidden" accept=".csv" onchange="importCSV(this)">
-            </div>
-            <div id="contactList" class="flex-1 overflow-y-auto custom-scrollbar"></div>
+        <aside class="w-64 border-r border-slate-800 bg-[#0d1117] flex flex-col p-4">
+            <button onclick="$('#csvFile').click()" class="text-xs font-bold text-blue-400 mb-4 hover:underline">↑ IMPORT CONTACTS</button>
+            <input type="file" id="csvFile" class="hidden" accept=".csv" onchange="importCSV(this)">
+            <div id="contactList" class="flex-1 overflow-y-auto space-y-2"></div>
         </aside>
 
-        <main class="flex-1 flex flex-col items-center justify-center bg-[#0b0e14] relative">
+        <main class="flex-1 flex flex-col items-center justify-center relative bg-[#0b0e14]">
             <div class="w-64">
                 <input id="dialDisplay" type="text" readonly class="w-full bg-transparent text-5xl font-light text-center mb-10 text-white outline-none tracking-tighter" placeholder="0000">
                 <div class="grid grid-cols-3 gap-4 mb-10">
                     <script>
                         ['1','2','3','4','5','6','7','8','9','*','0','#'].forEach(k => {
-                            document.write(`<button onclick="press('${k}')" class="h-14 w-14 mx-auto rounded-full bg-slate-900 hover:bg-slate-800 text-xl text-white border border-slate-800 transition-all active:scale-90 font-medium">${k}</button>`);
+                            document.write(`<button onclick="press('${k}')" class="h-14 w-14 mx-auto rounded-full bg-slate-900 hover:bg-slate-800 text-xl text-white border border-slate-800 active:scale-90 transition-all">${k}</button>`);
                         });
                     </script>
                 </div>
                 <div class="flex justify-center gap-4">
-                    <button id="callBtn" onclick="doCall()" class="h-16 w-16 bg-emerald-600 hover:bg-emerald-500 rounded-full flex items-center justify-center text-2xl text-white shadow-lg active:scale-90 transition-transform">📞</button>
-                    <button id="hangupBtn" onclick="doHangup()" class="h-16 w-16 bg-rose-600 hover:bg-rose-500 rounded-full hidden flex items-center justify-center text-2xl text-white shadow-lg active:scale-90 transition-transform">🛑</button>
+                    <button id="callBtn" onclick="doCall()" class="h-16 w-16 bg-emerald-600 hover:bg-emerald-500 rounded-full flex items-center justify-center text-2xl text-white shadow-lg">📞</button>
+                    <button id="hangupBtn" onclick="doHangup()" class="h-16 w-16 bg-rose-600 hover:bg-rose-500 rounded-full hidden flex items-center justify-center text-2xl text-white shadow-lg">🛑</button>
                 </div>
             </div>
             
-            <div id="debug" class="absolute bottom-4 left-4 right-4 h-24 bg-black/50 rounded p-2 font-mono text-[9px] text-emerald-500 overflow-y-auto">
-                > System ready...
+            <!-- DEBUG WINDOW -->
+            <div id="debug" class="absolute bottom-4 left-4 right-4 h-24 bg-black/80 rounded p-2 font-mono text-[9px] text-emerald-500 overflow-y-auto border border-slate-800">
+                > Initializing...
             </div>
         </main>
     </div>
 
     <audio id="remoteaudio" autoplay></audio>
 
-    <div id="settingsModal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-6 backdrop-blur-sm">
-        <div class="bg-[#161b22] border border-slate-700 w-full max-w-xs rounded-2xl p-6 shadow-2xl">
-            <h3 class="text-white font-bold mb-4 text-center">SIP LOGIN</h3>
-            <input id="sip_user" type="text" placeholder="SIP User" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg mb-2 text-sm outline-none focus:border-indigo-500">
-            <input id="sip_pass" type="password" placeholder="Password" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg mb-2 text-sm outline-none focus:border-indigo-500">
-            <input id="sip_proxy" type="text" value="amarip.net" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg mb-4 text-sm outline-none focus:border-indigo-500">
-            <button onclick="saveSettings()" class="w-full bg-indigo-600 py-3 rounded-lg font-bold text-white mb-2 hover:bg-indigo-500 transition-colors">CONNECT</button>
+    <div id="settingsModal" class="fixed inset-0 bg-black/95 z-50 hidden flex items-center justify-center p-6">
+        <div class="bg-[#161b22] border border-slate-700 w-full max-w-xs rounded-2xl p-6">
+            <h3 class="text-white font-bold mb-4 text-center">LOGIN</h3>
+            <input id="sip_user" type="text" placeholder="SIP Number" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg mb-2 text-sm">
+            <input id="sip_pass" type="password" placeholder="Password" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg mb-2 text-sm">
+            <button onclick="saveSettings()" class="w-full bg-blue-600 py-3 rounded-lg font-bold text-white mb-2">CONNECT</button>
+            <p class="text-[9px] text-slate-500 text-center mt-2 uppercase">Ensure ModHeader is ON</p>
         </div>
     </div>
 
     <script>
-        let janus = null, sipcall = null, keepAliveTimer = null;
-        let contacts = JSON.parse(localStorage.getItem('bd_contacts')) || [];
+        let janus = null, sipcall = null, contacts = JSON.parse(localStorage.getItem('bd_contacts')) || [];
 
-        function log(m) { 
-            $('#debug').append(`<div>[${new Date().toLocaleTimeString()}] ${m}</div>`);
-            $('#debug').scrollTop($('#debug')[0].scrollHeight);
-        }
+        function log(m) { $('#debug').append(`<div>[${new Date().toLocaleTimeString()}] ${m}</div>`).scrollTop($('#debug')[0].scrollHeight); }
 
         $(document).ready(() => {
             renderContacts();
-            if(localStorage.getItem('bd_sip_cfg')) initJanus();
+            if(localStorage.getItem('bd_cfg')) initJanus();
             else $('#settingsModal').show();
         });
+
+        function checkSSL() { window.open("https://amarip.net/janus-ws", "_blank"); }
 
         function saveSettings() {
             const cfg = {
                 user: $('#sip_user').val(),
                 pass: $('#sip_pass').val(),
-                proxy: $('#sip_proxy').val(),
+                proxy: "amarip.net",
                 server: "wss://amarip.net/janus-ws"
             };
-            localStorage.setItem('bd_sip_cfg', JSON.stringify(cfg));
+            localStorage.setItem('bd_cfg', JSON.stringify(cfg));
             location.reload();
         }
 
         function initJanus() {
-            const cfg = JSON.parse(localStorage.getItem('bd_sip_cfg'));
+            const cfg = JSON.parse(localStorage.getItem('bd_cfg'));
             Janus.init({ debug: "none", callback: function() {
                 janus = new Janus({
                     server: cfg.server,
+                    // FIX: This tells Janus to use the protocol seen in your screenshot
+                    protocol: 'janus-protocol', 
                     success: function() {
-                        log("Connected to Janus Server");
+                        log("WS Connected to AmarIP");
                         janus.attach({
                             plugin: "janus.plugin.sip",
                             success: function(handle) {
                                 sipcall = handle;
-                                log("SIP Plugin Ready. Registering...");
+                                log("Registering...");
                                 sipcall.send({ message: {
                                     request: "register",
                                     proxy: `sip:${cfg.proxy}`,
                                     username: `sip:${cfg.user}@${cfg.proxy}`,
                                     secret: cfg.pass
                                 }});
-                                // Start Heartbeat
-                                keepAliveTimer = setInterval(() => { janus.send({janus: "keepalive"}); }, 25000);
                             },
-                            error: (e) => log("Plugin Error: " + e),
-                            onmessage: onMessage,
+                            error: (e) => log("Error: " + e),
+                            onmessage: (msg, jsep) => {
+                                const event = msg?.result?.event;
+                                if(event === 'registered') updateStatus("ONLINE", "text-emerald-500");
+                                if(event === 'registration_failed') updateStatus("AUTH FAILED", "text-rose-500");
+                                if(event === 'hangup') resetUI();
+                                if(jsep) sipcall.handleRemoteJsep({ jsep: jsep });
+                            },
                             onremotestream: (stream) => Janus.attachMediaStream($('#remoteaudio').get(0), stream)
                         });
                     },
                     error: (e) => {
-                        log("WS Error: " + JSON.stringify(e));
-                        updateStatus("DISCONNECTED - CHECK ORIGIN", "text-rose-500");
+                        log("Connection Blocked by Browser/Server");
+                        updateStatus("OFFLINE - CLICK TO FIX", "text-rose-500");
                     }
                 });
             }});
         }
 
-        function onMessage(msg, jsep) {
-            const event = msg?.result?.event;
-            if(event) log("Event: " + event);
-            
-            if(event === 'registered') updateStatus("ONLINE", "text-emerald-500");
-            if(event === 'registration_failed') updateStatus("AUTH ERROR", "text-rose-500");
-            if(event === 'hangup') resetUI();
-            if(event === 'incomingcall') {
-                if(confirm(`Incoming Call. Answer?`)) {
-                    sipcall.createAnswer({
-                        jsep: jsep, media: { audio: true, video: false },
-                        success: (ans) => sipcall.send({ message: { request: "accept" }, jsep: ans })
-                    });
-                }
-            }
-            if(jsep) sipcall.handleRemoteJsep({ jsep: jsep });
-        }
-
+        // UI HELPERS
+        function press(k) { $('#dialDisplay').val($('#dialDisplay').val() + k); }
         function doCall(target) {
             const num = target || $('#dialDisplay').val();
-            if(!num) return;
+            const cfg = JSON.parse(localStorage.getItem('bd_cfg'));
             sipcall.createOffer({
                 media: { audio: true, video: false },
                 success: (jsep) => {
-                    const cfg = JSON.parse(localStorage.getItem('bd_sip_cfg'));
                     sipcall.send({ message: { request: "call", uri: `sip:${num}@${cfg.proxy}` }, jsep: jsep });
                     $('#callBtn').hide(); $('#hangupBtn').show();
                 }
             });
         }
-
-        function doHangup() {
-            sipcall.send({ message: { request: "hangup" } });
-            resetUI();
-        }
-
+        function doHangup() { sipcall.send({ message: { request: "hangup" } }); resetUI(); }
         function resetUI() { $('#callBtn').show(); $('#hangupBtn').hide(); $('#dialDisplay').val(''); }
         function updateStatus(t, c) { $('#status').text(t).removeClass().addClass(`text-[10px] font-bold px-3 py-1 rounded bg-slate-900 border border-slate-700 ${c}`); }
-        function press(k) { $('#dialDisplay').val($('#dialDisplay').val() + k); }
-
         function renderContacts() {
             $('#contactList').html(contacts.map(c => `
-                <div class="p-3 border-b border-slate-800 hover:bg-slate-800/50 cursor-pointer group flex justify-between" onclick="doCall('${c.phone}')">
-                    <div><div class="text-xs font-bold text-white">${c.name}</div><div class="text-[10px] text-slate-500">${c.phone}</div></div>
-                    <div class="opacity-0 group-hover:opacity-100 text-emerald-500">📞</div>
+                <div class="p-2 border-b border-slate-800 hover:bg-slate-800 cursor-pointer" onclick="doCall('${c.phone}')">
+                    <div class="text-xs font-bold text-white">${c.name}</div><div class="text-[9px] text-slate-500">${c.phone}</div>
                 </div>
             `).join(''));
         }
-
         function importCSV(input) {
             const reader = new FileReader();
             reader.onload = (e) => {
-                e.target.result.split('\n').forEach(line => {
-                    const [n, p] = line.split(',');
+                e.target.result.split('\n').forEach(l => {
+                    const [n, p] = l.split(',');
                     if(n && p) contacts.push({ name: n.trim(), phone: p.trim() });
                 });
                 localStorage.setItem('bd_contacts', JSON.stringify(contacts));
